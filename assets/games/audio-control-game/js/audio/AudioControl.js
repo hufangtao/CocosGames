@@ -1,28 +1,26 @@
-// Learn cc.Class:
-//  - [Chinese] http://www.cocos.com/docs/creator/scripting/class.html
-//  - [English] http://www.cocos2d-x.org/docs/editors_and_tools/creator-chapters/scripting/class/index.html
-// Learn Attribute:
-//  - [Chinese] http://www.cocos.com/docs/creator/scripting/reference/attributes.html
-//  - [English] http://www.cocos2d-x.org/docs/editors_and_tools/creator-chapters/scripting/reference/attributes/index.html
-// Learn life-cycle callbacks:
-//  - [Chinese] http://www.cocos.com/docs/creator/scripting/life-cycle-callbacks.html
-//  - [English] http://www.cocos2d-x.org/docs/editors_and_tools/creator-chapters/scripting/life-cycle-callbacks/index.html
 
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
 cc.Class({
     extends: cc.Component,
 
     properties: {
-        voiceLevel:0
+        voiceLevel:0,
+        _inited:false,
+        _audioContext:null,
+        _audioInput:null,
+        _analyserNode:null,
+        _freqByteData:null
     },
 
     // LIFE-CYCLE CALLBACKS:
 
     onLoad () {
-        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        cc.view.resizeWithBrowserSize(true);
+        cc.view.enableAutoFullScreen(true);
         this._audioContext = new AudioContext();
 
         var self = this;
-        var constraints = {audio:true,video: true};
+        var constraints = {audio:true};
 
         // 老的浏览器可能根本没有实现 mediaDevices，所以我们可以先设置一个空的对象
         if (navigator.mediaDevices === undefined) {
@@ -73,7 +71,7 @@ cc.Class({
             })
             .catch(function (err) {
                 alert('Error getting audio');
-                console.log(err.name+":"+err.message);
+                console.log(err.type+":"+err.name+":"+err.message);
                 self._inited = false;
             })
     },
@@ -85,12 +83,14 @@ cc.Class({
     update (dt) {
 
         if (this._inited) {
+            var analyser = this._analyserNode,
+                freqByteData = this._freqByteData;
+            analyser.getByteFrequencyData(freqByteData);
             var sum = 0;
-            for (var i = 0; i < this._dataArray; i++) {
-                sum += this._dataArray[i];
+            for (var i = 0; i < freqByteData.length; i++) {
+                sum += freqByteData[i];
             }
-            this.voiceLevel = sum/this._dataArray.length;
-            console.log(this.voiceLevel);
+            this.voiceLevel = sum / freqByteData.length;
         }
 
     },
